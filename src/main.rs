@@ -118,7 +118,7 @@ struct Cli {
     #[arg(short, long)]
     res: f64,
 
-    /// Optional classification filter.
+    /// Optional LAS classification code filter [see LAS specification: https://www.asprs.org/wp-content/uploads/2019/03/LAS_1_4_r14.pdf#page=22]
     #[arg(short, long)]
     class: Option<u8>,
 
