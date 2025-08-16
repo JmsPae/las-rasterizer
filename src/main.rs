@@ -225,7 +225,7 @@ fn main() -> Result<(), Error> {
 
     ds.set_geo_transform(&[bounds.min.x, cli.res, 0.0, bounds.min.y, 0.0, cli.res])?;
     let mut rb = ds.rasterband(1)?;
-    rb.set_no_data_value(Some(NODATA))?;
+    rb.set_no_data_value(Some(cli.nodata.unwrap_or(NODATA)))?;
     rb.write(
         (0, 0),
         (width, height),
