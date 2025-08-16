@@ -17,8 +17,7 @@ pub enum Error {
     InsertionError(#[from] spade::InsertionError),
 
     #[error("Something happened that really shouldn't: {0}")]
-    ShouldntHappen(String)
+    ShouldntHappen(String),
 }
-
 
 pub type Result<T> = core::result::Result<T, Error>;

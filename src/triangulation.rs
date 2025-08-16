@@ -1,7 +1,7 @@
 use std::collections::VecDeque;
 
 use las::point::Classification;
-use las::Reader;
+use las::{Bounds, Reader};
 use log::info;
 use spade::handles::FixedDirectedEdgeHandle;
 use spade::{
@@ -10,7 +10,7 @@ use spade::{
 
 use crate::error::Result;
 use crate::util::get_raster_size;
-use crate::{get_var, Cli, Variable, NODATA};
+use crate::{get_var, Variable, NODATA};
 
 #[derive(Debug, Copy, Clone)]
 struct Point {
@@ -41,6 +41,7 @@ type TriangulationType = ConstrainedDelaunayTriangulation<Point>;
 
 pub fn triangulate(
     mut reader: Reader,
+    bounds: Bounds,
     var: Variable,
     res: f64,
     freeze_distance: f64,
@@ -132,8 +133,7 @@ pub fn triangulate(
         Ok::<(), crate::error::Error>(())
     })?;
 
-    let bounds = reader.header().bounds();
-    let (width, height) = get_raster_size(&reader, res);
+    let (width, height) = get_raster_size(&bounds, res);
     let mut ret: Vec<f64> = Vec::with_capacity(width * height);
 
     info!("Triangulating...");

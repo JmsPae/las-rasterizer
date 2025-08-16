@@ -105,7 +105,6 @@ enum Commands {
 
 #[derive(Parser)]
 #[command(version, about = "Generates a raster from a las/laz file", long_about = None)]
-/// Chungus
 struct Cli {
     #[command(subcommand)]
     command: Commands,
@@ -130,6 +129,9 @@ struct Cli {
     #[arg(short, long, value_parser = extent_parser)]
     extent: Option<Bounds>,
 
+    /// Specific NODATA value. Default: -9999.0
+    nodata: Option<f64>,
+
     /// Output GeoTIFF path
     output: PathBuf,
 }
@@ -152,22 +154,31 @@ fn main() -> Result<(), Error> {
     let cli = Cli::parse();
 
     let reader = Reader::from_path(&cli.input)?;
-    let bounds = reader.header().bounds();
-    let (width, height) = get_raster_size(&reader, cli.res);
+    let bounds = cli.extent.unwrap_or(reader.header().bounds());
 
     let data = match &cli.command {
-        Commands::Bin { func } => bin_points(reader, &cli, func)?,
+        Commands::Bin { func } => bin_points(
+            reader,
+            bounds,
+            cli.res,
+            cli.class,
+            cli.var.unwrap_or(Variable::Z),
+            func.clone().unwrap_or(Function::Median),
+        )?,
         Commands::Triangulate {
             freeze_distance,
             insertion_buffer,
         } => triangulate(
             reader,
+            bounds,
             cli.var.unwrap_or(Variable::Z),
             cli.res,
             *freeze_distance,
             *insertion_buffer,
         )?,
     };
+
+    let (width, height) = get_raster_size(&bounds, cli.res);
 
     info!("Writing...");
     let mut ds = DriverManager::get_driver_by_name("GTiff")?
