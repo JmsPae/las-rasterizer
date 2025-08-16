@@ -8,13 +8,16 @@ pub enum Error {
     Disconnect(#[from] io::Error),
 
     #[error("Las Error: {0}")]
-    LasError(#[from] las::Error),
+    Las(#[from] las::Error),
 
     #[error("GDAL Error: {0}")]
-    GDALError(#[from] gdal::errors::GdalError),
+    Gdal(#[from] gdal::errors::GdalError),
 
     #[error("Triangulation Insertion Error: {0}")]
-    InsertionError(#[from] spade::InsertionError),
+    Insertion(#[from] spade::InsertionError),
+
+    #[error("Couldn't find a valid GDAL driver for extension '{0}'")]
+    NoDriverForExtension(String),
 
     #[error("Something happened that really shouldn't: {0}")]
     ShouldntHappen(String),

@@ -1,9 +1,10 @@
+use std::collections::HashMap;
 use std::path::PathBuf;
 use std::str::FromStr;
 
 use clap::{Parser, Subcommand, ValueEnum};
 use gdal::raster::Buffer;
-use gdal::DriverManager;
+use gdal::{Driver, DriverManager, Metadata};
 use las::{Bounds, Point, Reader, Vector};
 use log::info;
 
@@ -130,6 +131,7 @@ struct Cli {
     extent: Option<Bounds>,
 
     /// Specific NODATA value. Default: -9999.0
+    #[arg(short, long)]
     nodata: Option<f64>,
 
     /// Output GeoTIFF path
@@ -178,11 +180,48 @@ fn main() -> Result<(), Error> {
         )?,
     };
 
+    // Collect availiable GDAL raster drivers.
+    let drivers: Vec<Driver> = DriverManager::all()
+        .filter(|d| {
+            d.metadata_item("DCAP_RASTER", "").is_some()
+                && d.metadata_item("DCAP_CREATE", "").is_some()
+                && d.metadata_item("DMD_EXTENSIONS", "").is_some()
+        })
+        .collect();
+
+    let mut driver_map: HashMap<String, &Driver> = HashMap::new();
+
+    for driver in drivers.iter() {
+        let items = driver.metadata_item("DMD_EXTENSIONS", "").unwrap();
+        let exts = items.split(' ').collect::<Vec<&str>>();
+
+        for ext in exts {
+            driver_map.insert(ext.to_string(), driver);
+        }
+    }
+
+    let out_ext = cli
+        .output
+        .extension()
+        .unwrap()
+        .to_str()
+        .unwrap()
+        .to_string();
+
+    let driver = driver_map
+        .get(
+            &cli.output
+                .extension()
+                .map(|o| o.to_str().unwrap().to_string())
+                .unwrap(),
+        )
+        .ok_or(Error::NoDriverForExtension(format!("{:?}", out_ext)))?;
+
+    info!("Writing {:?} ...", driver.short_name());
+
     let (width, height) = get_raster_size(&bounds, cli.res);
 
-    info!("Writing...");
-    let mut ds = DriverManager::get_driver_by_name("GTiff")?
-        .create_with_band_type::<f64, _>(cli.output, width, height, 1)?;
+    let mut ds = driver.create_with_band_type::<f64, _>(cli.output, width, height, 1)?;
 
     ds.set_geo_transform(&[bounds.min.x, cli.res, 0.0, bounds.min.y, 0.0, cli.res])?;
     let mut rb = ds.rasterband(1)?;
