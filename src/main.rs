@@ -41,9 +41,11 @@ enum Function {
 fn extent_parser(s: &str) -> Result<Bounds, String> {
     let split: Vec<&str> = s.split(',').collect();
 
-    if split.len() != 6 {
-        return Err(format!("'{s}' has an insufficient number of coordinates"));
+    if !(split.len() == 6 || split.len() == 4) {
+        return Err(format!("'{s}' has an invalid number of coordinates"));
     }
+
+    let use_z: bool = split.len() == 6;
 
     fn parse(num: &str) -> Result<f64, String> {
         num.parse()
@@ -54,7 +56,7 @@ fn extent_parser(s: &str) -> Result<Bounds, String> {
         for i in 0..3 {
             if min[i] > max[i] {
                 return Err(format!(
-                    "Invalid extent. {} is greater than {}",
+                    "Invalid extent, {} is greater than {}",
                     min[i], max[i]
                 ));
             }
@@ -63,9 +65,32 @@ fn extent_parser(s: &str) -> Result<Bounds, String> {
         Ok(())
     }
 
-    let min: [f64; 3] = [parse(split[0])?, parse(split[1])?, parse(split[2])?];
+    let min_x = parse(split[0])?;
+    let min_y = parse(split[1])?;
 
-    let max: [f64; 3] = [parse(split[3])?, parse(split[4])?, parse(split[5])?];
+    let min_z = match use_z {
+        true => parse(split[2])?,
+        false => f64::MIN,
+    };
+
+    let max_x = match use_z {
+        true => parse(split[2]),
+        false => parse(split[3]),
+    }?;
+
+    let max_y = match use_z {
+        true => parse(split[3]),
+        false => parse(split[4]),
+    }?;
+
+    let max_z = match use_z {
+        true => parse(split[5])?,
+        false => f64::MAX,
+    };
+
+    let min: [f64; 3] = [min_x, min_y, min_z];
+
+    let max: [f64; 3] = [max_x, max_y, max_z];
 
     check_min_max(&min, &max)?;
 
@@ -134,7 +159,7 @@ struct Cli {
     #[arg(short, long)]
     nodata: Option<f64>,
 
-    /// Output GeoTIFF path
+    /// Output raster path
     output: PathBuf,
 }
 

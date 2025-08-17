@@ -75,7 +75,8 @@ pub fn triangulate(
     let mut constraint_buffer: VecDeque<FixedDirectedEdgeHandle> = VecDeque::new();
 
     info!("Building triangulation...");
-    points.into_iter().try_for_each(|point| {
+
+    for point in points.into_iter() {
         for (i, edge) in constraint_buffer.iter().rev().enumerate() {
             let edge = t.directed_edge(*edge);
 
@@ -114,6 +115,7 @@ pub fn triangulate(
                     insert_vert(&mut t, &mut buffer_height)?;
                 }
             }
+            // Reasonably sure this overwrites/isn't added at all, but leaving it for now.
             spade::PositionInTriangulation::OnVertex(handle) => {
                 if point.z - t.vertex(handle).data().z > buffer_height {
                     insert_vert(&mut t, &mut buffer_height)?;
@@ -129,9 +131,7 @@ pub fn triangulate(
                 insert_vert(&mut t, &mut buffer_height)?;
             }
         }
-
-        Ok::<(), crate::error::Error>(())
-    })?;
+    }
 
     let (width, height) = get_raster_size(&bounds, res);
     let mut ret: Vec<f64> = Vec::with_capacity(width * height);
