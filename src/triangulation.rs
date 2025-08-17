@@ -76,7 +76,14 @@ pub fn triangulate(
 
     info!("Building triangulation...");
 
-    for point in points.into_iter() {
+    let len = points.len();
+    let frac = len / 10;
+
+    for (point_i, point) in points.into_iter().enumerate() {
+        if point_i % frac == 0 {
+            info!("{}%", ((point_i as f32 / len as f32) * 100.0).round());
+        }
+
         for (i, edge) in constraint_buffer.iter().rev().enumerate() {
             let edge = t.directed_edge(*edge);
 
@@ -140,9 +147,9 @@ pub fn triangulate(
     let interp = t.barycentric();
     for y in 0..height {
         // Center of pixel
-        let p_y = bounds.min.y.round() + res * y as f64;
+        let p_y = bounds.min.y.round() + res * 0.5 + res * y as f64;
         for x in 0..width {
-            let p_x = bounds.min.x.round() + res * x as f64;
+            let p_x = bounds.min.x.round() + res * 0.5 + res * x as f64;
 
             let p = interp
                 .interpolate(|b| b.data().value, Point2 { x: p_x, y: p_y })
