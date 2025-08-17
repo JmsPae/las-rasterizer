@@ -61,13 +61,11 @@ pub fn bin_points(
         let y_idx = ((point.y - bounds.min.y) / res).floor() as usize;
         let i = y_idx * width + x_idx;
 
-        // Get the array of values for a given cell (along with some classic error handling ;) )
-        let cell = data.get_mut(i).ok_or(Error::ShouldntHappen(format!(
-            "Couldn't get index {i}/{len}: {x_idx}, {y_idx} {width}, {height}"
-        )))?;
-
-        // Append a variable (the point's Z value by default) to the cell bin
-        cell.push(get_var(&var, &point));
+        // Get the array of values for a given cell, ignore out of bounds.
+        if let Some(cell) = data.get_mut(i) {
+            // Append a variable (the point's Z value by default) to the cell bin
+            cell.push(get_var(&var, &point));
+        }
     }
 
     // Return an "Ok" result, collapsing each cell into a single value given a certain function,
